@@ -393,15 +393,15 @@ const StakingDeposit = observer(() => {
     };
 
     const sendAccountUpdate = async (deposited, accountId, txHash, onSuccess, onFailure) => {
-        const userProfile: any = jwtDecode(queryParams['id_token']);
-        deposited && analytics.identify(userProfile.sub);
+        // const userProfile: any = jwtDecode(queryParams['id_token']);
+        // deposited && analytics.identify(userProfile.sub);
         try {
             const res = await axios({
-                url: `${process.env.REACT_APP_API_URL}/accounts/${accountId}`,
                 method: 'patch',
-                data: {deposited: deposited, depositTxHash: txHash},
                 responseType: 'json',
+                data: {deposited: deposited, depositTxHash: txHash},
                 headers: {Authorization: `Bearer ${queryParams['id_token']}`},
+                url: `${process.env.REACT_APP_API_URL}/accounts/${accountId}`,
             });
             onSuccess(res.data);
             deposited && walletProvider && analytics.track('validator-deposited', {
