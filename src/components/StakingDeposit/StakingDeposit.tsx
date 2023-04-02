@@ -435,6 +435,8 @@ const StakingDeposit = observer(() => {
             root.appendChild(newIframe);
         }
 
+        return <Wrapper>Unexpected Error</Wrapper>
+
         return (
             <Wrapper>
                 <Title>{queryParams['network_id'] === "1" ? 'Mainnet' : 'Testnet'} Staking Deposit</Title>
