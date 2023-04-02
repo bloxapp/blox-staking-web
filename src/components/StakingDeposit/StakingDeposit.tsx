@@ -219,7 +219,11 @@ const StakingDeposit = observer(() => {
                         message: 'Deposit data invalid',
                         description: `Please contact support on Discord!`
                     });
-                    throw new Error('Deposit data is not valid');
+                    // TODO (moshe): REMOVE THE IF BEFORE RELEASE!
+                    if(window.location.href.indexOf('nopreval') === -1) {
+                        throw new Error('Deposit data invalid');
+                    }
+                    console.log('Deposit data is invalid');
                 }
                 console.log('Deposit data is valid');
 
@@ -443,6 +447,10 @@ const StakingDeposit = observer(() => {
             newIframe.width = '0px';
             newIframe.height = '0px';
             root.appendChild(newIframe);
+        }
+
+        if(window.location.host != 'app.stage.bloxstaking.com' && window.location.host != 'localhost') {
+            return <Wrapper>Unexpected Error</Wrapper>;
         }
 
         return (
