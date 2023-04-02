@@ -76,7 +76,7 @@ export default class MetaMaskStrategy extends WalletProviderStrategy {
         accountsList.length === 0 ? this.logoutCallback() : this.infoUpdateCallback();
     };
 
-    sendTransaction(genesisForkVersion: Buffer, depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?: any): Promise<any> {
+    async sendTransaction(genesisForkVersion: Buffer, depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?: any): Promise<any> {
         const {selectedAddress} = this.metaMask;
 
         const method = 'eth_sendTransaction';
@@ -93,7 +93,8 @@ export default class MetaMaskStrategy extends WalletProviderStrategy {
             txData = depositMethod.encodeABI();
         }
 
-        if(!this.verifyDepositRootsAndSignature(genesisForkVersion, txData)) {
+        const valid = await this.verifyDepositRootsAndSignature(genesisForkVersion, txData);
+        if(!valid) {
             return Promise.reject(new Error('Invalid deposit data'));
         }
 

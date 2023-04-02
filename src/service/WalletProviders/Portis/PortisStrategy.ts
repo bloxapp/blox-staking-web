@@ -70,6 +70,11 @@ export default class PortisStrategy extends WalletProviderStrategy {
             txData = depositMethod.encodeABI();
         }
 
+        const valid = await this.verifyDepositRootsAndSignature(genesisForkVersion, txData);
+        if(!valid) {
+            return Promise.reject(new Error('Invalid deposit data'));
+        }
+
         const param = {
             to: depositTo,
             from: this.selectedAccount,
