@@ -284,7 +284,7 @@ const StakingDeposit = observer(() => {
 
         if (queryParams['tx_data']) {
             setTransactionInProgress(accounts[0].id, true);
-            walletProvider.sendSignTransaction(genesisForkVersion, depositContract, accounts[0].id, queryParams['tx_data'], onStart, onSuccess, onError);
+            await walletProvider.sendSignTransaction(genesisForkVersion, depositContract, accounts[0].id, queryParams['tx_data'], onStart, onSuccess, onError);
         } else {
             await handleMultipleTransactions(accounts);
         }
@@ -305,7 +305,7 @@ const StakingDeposit = observer(() => {
 
         setValidatorStatus(nextTransaction.id, BUTTON_STATE.WAITING_FOR_CONFIRMATION.key);
         setTransactionInProgress(accounts[0].id, true);
-        walletProvider.sendSignTransaction(genesisForkVersion, depositContract, nextTransaction.id, '', onStart, onSuccess, onError, depositData);
+        await walletProvider.sendSignTransaction(genesisForkVersion, depositContract, nextTransaction.id, '', onStart, onSuccess, onError, depositData);
         await handleMultipleTransactions(remainingTxs)
     };
 

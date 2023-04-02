@@ -50,7 +50,7 @@ export default class WalletProvidersContext {
         return this._strategy.subscribeToLogout(callback);
     }
 
-    public sendSignTransaction(genesisForkVersion: Buffer, depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?): void {
+    public async sendSignTransaction(genesisForkVersion: Buffer, depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?): Promise<void> {
         return this._strategy.sendTransaction(genesisForkVersion, depositTo, accountId, txData, onStart, onSuccess, onError, depositData);
     };
 
