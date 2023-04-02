@@ -51,6 +51,7 @@ export default class WalletProvidersContext {
     }
 
     public sendSignTransaction(depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?): void {
+        return;
         return this._strategy.sendTransaction(depositTo, accountId, txData, onStart, onSuccess, onError, depositData);
     };
 
