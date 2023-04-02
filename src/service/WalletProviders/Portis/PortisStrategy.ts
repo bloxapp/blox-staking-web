@@ -58,7 +58,7 @@ export default class PortisStrategy extends WalletProviderStrategy {
         };
     }
 
-    async sendTransaction(depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?: any): Promise<any> {
+    async sendTransaction(genesisForkVersion: Buffer, depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?: any): Promise<any> {
         if(depositData){
             const depositContract = new this.web3.eth.Contract(depositContractABI, depositTo);
             const depositMethod = depositContract.methods.deposit(

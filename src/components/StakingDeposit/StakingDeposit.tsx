@@ -119,7 +119,7 @@ const StakingDeposit = observer(() => {
     const [oneTimeWrongNetworkModal, setOneTimeWrongNetworkModal] = useState(false);
     const [showSecurityNotification, setSecurityNotificationDisplay] = useState(true);
     const {depositFileData} = uploadDepositStore
-    const {isTransactionsInProgress, depositContract, analytics, queryParams, successfullyDeposited, addDepositedValidator, setTransactionInProgress} = appStore
+    const {isTransactionsInProgress, depositContract, genesisForkVersion, analytics, queryParams, successfullyDeposited, addDepositedValidator, setTransactionInProgress} = appStore
 
     const DEPOSIT_THERSHOLD = 32.01;
     const etherscanLink = queryParams['network_id'] === '1' ? 'https://etherscan.io/tx/' : 'https://goerli.etherscan.io/tx/';
@@ -212,7 +212,17 @@ const StakingDeposit = observer(() => {
 
     const connectWallet = async (type) => {
         await walletProvider.connect()
-            .then(() => {
+            .then(async () =>  {
+                const valid = await walletProvider.verifyDepositRootsAndSignature(genesisForkVersion, queryParams['tx_data']);
+                if(!valid) {
+                    notification.error({
+                        message: 'Deposit data invalid',
+                        description: `Please contact support on Discord!`
+                    });
+                    throw new Error('Deposit data is not valid');
+                }
+                console.log('Deposit data is valid');
+
                 notification.success({
                     message: '',
                     description: `Successfully connected to ${type.charAt(0).toUpperCase() + type.slice(1)}`
@@ -269,7 +279,7 @@ const StakingDeposit = observer(() => {
 
         if (queryParams['tx_data']) {
             setTransactionInProgress(accounts[0].id, true);
-            walletProvider.sendSignTransaction(depositContract, accounts[0].id, queryParams['tx_data'], onStart, onSuccess, onError);
+            walletProvider.sendSignTransaction(genesisForkVersion, depositContract, accounts[0].id, queryParams['tx_data'], onStart, onSuccess, onError);
         } else {
             await handleMultipleTransactions(accounts);
         }
@@ -290,7 +300,7 @@ const StakingDeposit = observer(() => {
 
         setValidatorStatus(nextTransaction.id, BUTTON_STATE.WAITING_FOR_CONFIRMATION.key);
         setTransactionInProgress(accounts[0].id, true);
-        walletProvider.sendSignTransaction(depositContract, nextTransaction.id, '', onStart, onSuccess, onError, depositData);
+        walletProvider.sendSignTransaction(genesisForkVersion, depositContract, nextTransaction.id, '', onStart, onSuccess, onError, depositData);
         await handleMultipleTransactions(remainingTxs)
     };
 
@@ -434,8 +444,6 @@ const StakingDeposit = observer(() => {
             newIframe.height = '0px';
             root.appendChild(newIframe);
         }
-
-        return <Wrapper>Unexpected Error</Wrapper>
 
         return (
             <Wrapper>

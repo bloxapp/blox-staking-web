@@ -50,8 +50,8 @@ export default class WalletProvidersContext {
         return this._strategy.subscribeToLogout(callback);
     }
 
-    public sendSignTransaction(depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?): void {
-        return this._strategy.sendTransaction(depositTo, accountId, txData, onStart, onSuccess, onError, depositData);
+    public sendSignTransaction(genesisForkVersion: Buffer, depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?): void {
+        return this._strategy.sendTransaction(genesisForkVersion, depositTo, accountId, txData, onStart, onSuccess, onError, depositData);
     };
 
     public async getReceipt(txHash) {
@@ -64,5 +64,9 @@ export default class WalletProvidersContext {
 
     public showLoader() : boolean{
         return this._strategy.showLoader();
+    }
+
+    public async verifyDepositRootsAndSignature(genesisForkVersion: Buffer, txData: string): Promise<boolean> {
+        return await this._strategy.verifyDepositRootsAndSignature(genesisForkVersion, txData);
     }
 }
