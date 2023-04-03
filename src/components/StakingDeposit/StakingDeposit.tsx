@@ -1,6 +1,6 @@
 import axios from 'axios';
 import {notification} from 'antd';
-import jwtDecode from 'jwt-decode';
+// import jwtDecode from 'jwt-decode';
 import styled from 'styled-components';
 import {observer} from "mobx-react-lite";
 import {useContext, useEffect, useState} from 'react';
@@ -220,11 +220,9 @@ const StakingDeposit = observer(() => {
                         description: `Please contact support on Discord!`,
                         duration: 10,
                     });
-                    // TODO (moshe): REMOVE THE IF BEFORE RELEASE!
-                    if(window.location.href.indexOf('nopreval') === -1) {
-                        throw new Error('Deposit data invalid');
-                    }
                     console.log('Deposit data is invalid');
+                    setLoadingWallet(false);
+                    return;
                 }
                 console.log('Deposit data is valid');
 
@@ -281,7 +279,6 @@ const StakingDeposit = observer(() => {
             return account.publicKey === publicKey
         });
 
-
         if (queryParams['tx_data']) {
             setTransactionInProgress(accounts[0].id, true);
             await walletProvider.sendSignTransaction(genesisForkVersion, depositContract, accounts[0].id, queryParams['tx_data'], onStart, onSuccess, onError);
@@ -328,7 +325,12 @@ const StakingDeposit = observer(() => {
         console.log('deposit end---------', error, txReceipt);
         if (error || !txReceipt?.status) {
             setDepositLoadingStatus(false);
-            return notification.error({message: error.message, duration: 0});
+            setTransactionInProgress(accountId, false);
+            setValidatorStatus(accountId, BUTTON_STATE.ERROR.key, txReceipt.transactionHash);
+            setTimeout(() => {
+                setValidatorStatus(accountId, BUTTON_STATE.DEPOSIT.key);
+            },2000)
+            return notification.error({message: 'failed to deposit', duration: 0});
         }
         if (queryParams['tx_data']) setTxHash(txReceipt.transactionHash);
         await sendAccountUpdate(true, accountId, txReceipt.transactionHash, () => {
@@ -408,8 +410,8 @@ const StakingDeposit = observer(() => {
     };
 
     const sendAccountUpdate = async (deposited, accountId, txHash, onSuccess, onFailure) => {
-        const userProfile: any = jwtDecode(queryParams['id_token']);
-        deposited && analytics.identify(userProfile.sub);
+        // const userProfile: any = jwtDecode(queryParams['id_token']);
+        // deposited && analytics.identify(userProfile.sub);
         try {
             const res = await axios({
                 url: `${process.env.REACT_APP_API_URL}/accounts/${accountId}`,
