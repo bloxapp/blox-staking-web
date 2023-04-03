@@ -58,7 +58,7 @@ export default class PortisStrategy extends WalletProviderStrategy {
         };
     }
 
-    async sendTransaction(depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?: any): Promise<any> {
+    async sendTransaction(genesisForkVersion: Buffer, depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?: any): Promise<any> {
         if(depositData){
             const depositContract = new this.web3.eth.Contract(depositContractABI, depositTo);
             const depositMethod = depositContract.methods.deposit(
@@ -68,6 +68,11 @@ export default class PortisStrategy extends WalletProviderStrategy {
                 prefix0x(depositData.deposit_data_root)
             );
             txData = depositMethod.encodeABI();
+        }
+
+        const valid = await this.verifyDepositRootsAndSignature(genesisForkVersion, txData);
+        if(!valid) {
+            return Promise.reject(new Error('Invalid deposit data'));
         }
 
         const param = {

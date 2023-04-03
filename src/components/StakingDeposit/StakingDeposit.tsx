@@ -1,6 +1,6 @@
 import axios from 'axios';
 import {notification} from 'antd';
-import jwtDecode from 'jwt-decode';
+// import jwtDecode from 'jwt-decode';
 import styled from 'styled-components';
 import {observer} from "mobx-react-lite";
 import {useContext, useEffect, useState} from 'react';
@@ -16,10 +16,12 @@ import {doubleDepositProtection, getAccounts, prefix0x} from "../UploadDepositFi
 import {UploadDepositStoreContext} from '../../common/stores/UploadDepositStore';
 import {StrategyError} from "../../service/WalletProviders/Metamask/MetaMaskStrategy";
 import WalletProvidersContext from "../../service/WalletProviders/WalletProvidersContext";
+import depositContractABI from '../../components/StakingDeposit/contract_abi.json';
 import {
     Wrapper, Section, Title, SubTitle, ErrorMessage, StepsBoxes,
     ConnectedWallet, NeedGoETH, DepositMethod, ConnectWalletButton, Faq, SecurityNotification
 } from './components';
+import Web3 from 'web3';
 
 
 const initialWalletInfoState = {
@@ -119,7 +121,7 @@ const StakingDeposit = observer(() => {
     const [oneTimeWrongNetworkModal, setOneTimeWrongNetworkModal] = useState(false);
     const [showSecurityNotification, setSecurityNotificationDisplay] = useState(true);
     const {depositFileData} = uploadDepositStore
-    const {isTransactionsInProgress, depositContract, analytics, queryParams, successfullyDeposited, addDepositedValidator, setTransactionInProgress} = appStore
+    const {isTransactionsInProgress, depositContract, genesisForkVersion, analytics, queryParams, successfullyDeposited, addDepositedValidator, setTransactionInProgress} = appStore
 
     const DEPOSIT_THERSHOLD = 32.01;
     const etherscanLink = queryParams['network_id'] === '1' ? 'https://etherscan.io/tx/' : 'https://goerli.etherscan.io/tx/';
@@ -212,7 +214,36 @@ const StakingDeposit = observer(() => {
 
     const connectWallet = async (type) => {
         await walletProvider.connect()
-            .then(() => {
+            .then(async () =>  {
+                let txData = null;
+                if(depositFileData){
+                    const web3 = new Web3(Web3.givenProvider);
+                    const accountDepositData = depositFileData.filter(deposit => prefix0x(deposit.pubkey) === bloxAccounts[0].publicKey)[0];
+                    // @ts-ignore
+                    const depositContractInstance = new web3.eth.Contract(depositContractABI, depositContract);
+                    const depositMethod = depositContractInstance.methods.deposit(
+                        prefix0x(accountDepositData.pubkey),
+                        prefix0x(accountDepositData.withdrawal_credentials),
+                        prefix0x(accountDepositData.signature),
+                        prefix0x(accountDepositData.deposit_data_root)
+                    );
+                    txData = depositMethod.encodeABI();
+                }
+
+                const valid = await walletProvider.verifyDepositRootsAndSignature(genesisForkVersion, txData ?? queryParams['tx_data']);
+
+                if(!valid) {
+                    notification.error({
+                        message: 'Deposit data invalid',
+                        description: `Please contact support on Discord!`,
+                        duration: 10,
+                    });
+                    console.log('Deposit data is invalid');
+                    setLoadingWallet(false);
+                    return;
+                }
+                console.log('Deposit data is valid');
+
                 notification.success({
                     message: '',
                     description: `Successfully connected to ${type.charAt(0).toUpperCase() + type.slice(1)}`
@@ -266,10 +297,9 @@ const StakingDeposit = observer(() => {
             return account.publicKey === publicKey
         });
 
-
         if (queryParams['tx_data']) {
             setTransactionInProgress(accounts[0].id, true);
-            walletProvider.sendSignTransaction(depositContract, accounts[0].id, queryParams['tx_data'], onStart, onSuccess, onError);
+            await walletProvider.sendSignTransaction(genesisForkVersion, depositContract, accounts[0].id, queryParams['tx_data'], onStart, onSuccess, onError);
         } else {
             await handleMultipleTransactions(accounts);
         }
@@ -290,7 +320,7 @@ const StakingDeposit = observer(() => {
 
         setValidatorStatus(nextTransaction.id, BUTTON_STATE.WAITING_FOR_CONFIRMATION.key);
         setTransactionInProgress(accounts[0].id, true);
-        walletProvider.sendSignTransaction(depositContract, nextTransaction.id, '', onStart, onSuccess, onError, depositData);
+        await walletProvider.sendSignTransaction(genesisForkVersion, depositContract, nextTransaction.id, '', onStart, onSuccess, onError, depositData);
         await handleMultipleTransactions(remainingTxs)
     };
 
@@ -313,7 +343,12 @@ const StakingDeposit = observer(() => {
         console.log('deposit end---------', error, txReceipt);
         if (error || !txReceipt?.status) {
             setDepositLoadingStatus(false);
-            return notification.error({message: error.message, duration: 0});
+            setTransactionInProgress(accountId, false);
+            setValidatorStatus(accountId, BUTTON_STATE.ERROR.key, txReceipt.transactionHash);
+            setTimeout(() => {
+                setValidatorStatus(accountId, BUTTON_STATE.DEPOSIT.key);
+            },2000)
+            return notification.error({message: 'failed to deposit', duration: 0});
         }
         if (queryParams['tx_data']) setTxHash(txReceipt.transactionHash);
         await sendAccountUpdate(true, accountId, txReceipt.transactionHash, () => {
@@ -433,6 +468,10 @@ const StakingDeposit = observer(() => {
             newIframe.width = '0px';
             newIframe.height = '0px';
             root.appendChild(newIframe);
+        }
+
+        if(window.location.host != 'app.stage.bloxstaking.com' && window.location.host != 'localhost:3000') {
+            return <Wrapper>Unexpected Error</Wrapper>;
         }
 
         return (
