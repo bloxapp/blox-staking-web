@@ -16,10 +16,12 @@ import {doubleDepositProtection, getAccounts, prefix0x} from "../UploadDepositFi
 import {UploadDepositStoreContext} from '../../common/stores/UploadDepositStore';
 import {StrategyError} from "../../service/WalletProviders/Metamask/MetaMaskStrategy";
 import WalletProvidersContext from "../../service/WalletProviders/WalletProvidersContext";
+import depositContractABI from '../../components/StakingDeposit/contract_abi.json';
 import {
     Wrapper, Section, Title, SubTitle, ErrorMessage, StepsBoxes,
     ConnectedWallet, NeedGoETH, DepositMethod, ConnectWalletButton, Faq, SecurityNotification
 } from './components';
+import Web3 from 'web3';
 
 
 const initialWalletInfoState = {
@@ -213,7 +215,23 @@ const StakingDeposit = observer(() => {
     const connectWallet = async (type) => {
         await walletProvider.connect()
             .then(async () =>  {
-                const valid = await walletProvider.verifyDepositRootsAndSignature(genesisForkVersion, queryParams['tx_data']);
+                let txData = null;
+                if(depositFileData){
+                    const web3 = new Web3(Web3.givenProvider);
+                    const accountDepositData = depositFileData.filter(deposit => prefix0x(deposit.pubkey) === bloxAccounts[0].publicKey)[0];
+                    // @ts-ignore
+                    const depositContractInstance = new web3.eth.Contract(depositContractABI, depositContract);
+                    const depositMethod = depositContractInstance.methods.deposit(
+                        prefix0x(accountDepositData.pubkey),
+                        prefix0x(accountDepositData.withdrawal_credentials),
+                        prefix0x(accountDepositData.signature),
+                        prefix0x(accountDepositData.deposit_data_root)
+                    );
+                    txData = depositMethod.encodeABI();
+                }
+
+                const valid = await walletProvider.verifyDepositRootsAndSignature(genesisForkVersion, txData ?? queryParams['tx_data']);
+
                 if(!valid) {
                     notification.error({
                         message: 'Deposit data invalid',
