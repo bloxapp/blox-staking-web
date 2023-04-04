@@ -3,10 +3,11 @@ import {createContext} from 'react';
 import {action, observable, makeObservable, computed} from 'mobx';
 import { NETWORKS } from '../../components/StakingDeposit/constants';
 import bloxAnalyticsPlugin from '../../service/analytics/blox-analytics-plugin';
+import { bufferHex } from 'utils/utils';
 
 const RELEVANT_PARAMS = [
     {name: 'id_token', mandatory: true, callback: 'setAnalytics'},
-    {name: 'network_id', mandatory: true, callback: 'setDepositContract'},
+    {name: 'network_id', mandatory: true, callback: 'setNetwork'},
     {name: 'account_id', mandatory: true},
     {name: 'tx_data', mandatory: false, callback: 'setSeedMode'}
 ]
@@ -16,6 +17,7 @@ class AppStore {
     seedMode = true;
     transactionsInProgress = {};
     depositContract;
+    genesisForkVersion?: Buffer;
     queryParams = {};
     allMandatoryParamsExist = true;
     successfullyDeposited = [];
@@ -27,6 +29,7 @@ class AppStore {
             analytics: observable,
             queryParams: observable,
             depositContract: observable,
+            genesisForkVersion: observable,
             successfullyDeposited: observable,
             transactionsInProgress: observable,
             allMandatoryParamsExist: observable,
@@ -54,7 +57,23 @@ class AppStore {
         }
     }
 
-    setDepositContract(networkId: string){
+    setNetwork(networkId: string){
+        const network = NETWORKS[networkId];
+        if(!network) {
+            throw new Error('Network not supported');
+        }
+        
+        // Verify & set genesis fork version.
+        const genesisForkVersion = bufferHex(NETWORKS[networkId].genesis_fork_version);
+        if(!genesisForkVersion || genesisForkVersion.length !== 4){
+            throw new Error('Genesis fork version not supported');
+        }
+        this.genesisForkVersion = genesisForkVersion;
+        
+        // Verify & set deposit contract address.
+        if(bufferHex(NETWORKS[networkId].contract).length !== 20){
+            throw new Error('Deposit contract not supported');
+        }
         this.depositContract = NETWORKS[networkId].contract;
     }
 

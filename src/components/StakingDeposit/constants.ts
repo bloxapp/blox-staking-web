@@ -15,6 +15,16 @@ export const BUTTON_STATE = {
 }
 
 export const NETWORKS = {
-  '1': {name: 'mainnet', displayName: 'Mainnet', contract: process.env.REACT_APP_MAINNET_DEPOSIT_CONTRACT_ADDRESS},
-  '5': {name: 'prater', displayName: 'Prater', contract: process.env.REACT_APP_PRATER_DEPOSIT_CONTRACT_ADDRESS},
+  '1': {
+    name: 'mainnet',
+    displayName: 'Mainnet',
+    contract: process.env.REACT_APP_MAINNET_DEPOSIT_CONTRACT_ADDRESS,
+    genesis_fork_version: process.env.REACT_APP_MAINNET_GENESIS_FORK_VERSION,
+  },
+  '5': {
+    name: 'prater',
+    displayName: 'Prater',
+    contract: process.env.REACT_APP_PRATER_DEPOSIT_CONTRACT_ADDRESS,
+    genesis_fork_version: process.env.REACT_APP_PRATER_GENESIS_FORK_VERSION,
+  },
 }

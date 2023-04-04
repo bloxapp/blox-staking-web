@@ -1,9 +1,10 @@
 import Web3 from "web3";
-import {EVENTS, NETWORK_IDS} from "./constants";
-import {MODAL_TYPES} from "../../../components/ModalsManager/constants";
-import {detect} from "detect-browser";
-import {WalletProviderStrategy} from "../WalletProviderStrategy";
-import {prefix0x} from '../../../components/UploadDepositFile/helper';
+import { EVENTS, NETWORK_IDS } from "./constants";
+import { MODAL_TYPES } from "../../../components/ModalsManager/constants";
+import { detect } from "detect-browser";
+import { WalletProviderStrategy } from "../WalletProviderStrategy";
+import { prefix0x } from '../../../components/UploadDepositFile/helper';
+import { DEPOSIT_AMOUNT_WEI } from "../../../constants";
 const depositContractABI = require('../../../components/StakingDeposit/contract_abi.json');
 
 export class StrategyError extends Error {
@@ -75,7 +76,7 @@ export default class MetaMaskStrategy extends WalletProviderStrategy {
         accountsList.length === 0 ? this.logoutCallback() : this.infoUpdateCallback();
     };
 
-    sendTransaction(depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?: any): Promise<any> {
+    async sendTransaction(genesisForkVersion: Buffer, depositTo: string, accountId: number, txData: string, onStart, onSuccess, onError, depositData?: any): Promise<any> {
         const {selectedAddress} = this.metaMask;
 
         const method = 'eth_sendTransaction';
@@ -92,12 +93,17 @@ export default class MetaMaskStrategy extends WalletProviderStrategy {
             txData = depositMethod.encodeABI();
         }
 
+        const valid = await this.verifyDepositRootsAndSignature(genesisForkVersion, txData);
+        if(!valid) {
+            return Promise.reject(new Error('Invalid deposit data'));
+        }
+
         const params = [
             {
                 from,
                 to: depositTo,
                 gas: '186A0', // 100k gas limit
-                value: this.web3.utils.numberToHex(this.web3.utils.toWei('32', 'ether')), // (amount * 1000000).toString(), // '32000000000'
+                value: this.web3.utils.numberToHex(DEPOSIT_AMOUNT_WEI),
                 data: txData,
             },
         ];
