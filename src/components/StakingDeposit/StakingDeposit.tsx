@@ -470,10 +470,6 @@ const StakingDeposit = observer(() => {
             root.appendChild(newIframe);
         }
 
-        if(window.location.host != 'app.stage.bloxstaking.com' && window.location.host != 'localhost:3000') {
-            return <Wrapper>Unexpected Error</Wrapper>;
-        }
-
         return (
             <Wrapper>
                 <Title>{queryParams['network_id'] === "1" ? 'Mainnet' : 'Testnet'} Staking Deposit</Title>
